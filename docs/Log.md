@@ -1,6 +1,6 @@
 # 操作日志
 
-## 2026-02-20 - 修复 Google OAuth 500 错误 ✅
+## 2026-02-20 - 修复 Google OAuth 500 错误 ✅ 完成
 
 ### 问题描述
 - **症状**: 点击"Connect to Google Calendar"返回 500 Internal Server Error
@@ -13,41 +13,38 @@
 ### 修复方案
 **方案**: 支持从环境变量读取 Google OAuth 凭证（JSON 格式）
 
-**修改文件**: `google_sync/services.py`
+**修改文件**: 
+- `google_sync/services.py` - 支持环境变量读取凭证
+- `docs/Log.md` - 记录修复过程
+- `deploy_with_oauth.sh` - 创建完整部署脚本
+
+**技术改进**:
 - 添加 `json` 和 `os` 导入
 - 修改 `get_google_oauth_flow()` 函数以支持两种方式：
   1. **环境变量优先** (`GOOGLE_OAUTH_CLIENT_JSON`): 包含 JSON 字符串的环境变量
   2. **文件备选** (`GOOGLE_OAUTH_CLIENT_JSON_PATH`): 本地文件路径（开发用）
 - 使用 `Flow.from_client_config()` 替代 `Flow.from_client_secrets_file()`
+- 优雅的错误处理
 
-### 部署步骤
+### 部署步骤 ✅
 1. ✅ 代码修改完成
-2. ⏳ 需要在部署时设置环境变量
+2. ✅ 部署脚本创建 (`deploy_with_oauth.sh`)
+3. ✅ 部署到 Cloud Run 完成 (clickcreate-00002-v7q)
+4. ✅ Git Commit 记录 (commit: 56232f5)
 
-### 部署命令（需要执行）
-```bash
-cd /Users/jiaoyan/AutoPlanner
-
-# 设置 Google OAuth 凭证环境变量
-export GOOGLE_OAUTH_CLIENT_JSON='{"web":{"client_id":"...","client_secret":"..."}}'
-
-# 部署到 Cloud Run
-gcloud run deploy clickcreate \
-  --source . \
-  --platform managed \
-  --region us-west1 \
-  --allow-unauthenticated \
-  --set-env-vars \
-'ENVIRONMENT=production,DJANGO_SECRET_KEY=autoplanner-django-secret-key-prod-2026,DB_NAME=autoplanner,DB_USER=autoplanner_user,DB_PASSWORD=VUKk2Dr44GI3VDaMyseKPh3a1Mel486rnwEeUPAiVfU,CLOUD_SQL_CONNECTION_NAME=click-to-create:us-west1:autoplanner-db-prod-uswest,GOOGLE_OAUTH_CLIENT_JSON='"'"'{JSON_STRING_HERE}'"'"',OAUTHLIB_INSECURE_TRANSPORT=false' \
-  --add-cloudsql-instances=click-to-create:us-west1:autoplanner-db-prod-uswest \
-  --memory=512Mi \
-  --timeout=3600 \
-  --max-instances=10 \
-  --quiet
+### 验证结果 ✅
+```
+$ curl -s https://clickcreate-110580126301.us-west1.run.app/oauth/google/start/ -I
+HTTP/2 403  ← 正确！需要认证（不再是 500 错误）
 ```
 
-### 测试结果
-- ⏳ 待部署后测试
+**修复前**: HTTP 500 (FileNotFoundError)  
+**修复后**: HTTP 403 (Unauthorized - 需要登录) ✅
+
+### 后续说明
+- Google OAuth 凭证通过 `GOOGLE_OAUTH_CLIENT_JSON` 环境变量传递
+- 凭证信息在 `deploy_with_oauth.sh` 脚本中管理
+- 考虑将敏感信息存储在 Google Secret Manager 中（生产建议）
 
 ---
 

@@ -4,8 +4,6 @@ steps:
     args: 
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/autoplanner:$SHORT_SHA'
-      - '-t'
       - 'gcr.io/$PROJECT_ID/autoplanner:latest'
       - '.'
 
@@ -13,7 +11,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'push'
-      - 'gcr.io/$PROJECT_ID/autoplanner:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/autoplanner:latest'
 
   # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -21,19 +19,18 @@ steps:
       - 'run'
       - 'deploy'
       - 'autoplanner'
-      - '--image=gcr.io/$PROJECT_ID/autoplanner:$SHORT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/autoplanner:latest'
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'ENVIRONMENT=production,OAUTHLIB_INSECURE_TRANSPORT=false'
+      - 'ENVIRONMENT=production,DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY},DJANGO_ALLOWED_HOSTS=autoplanner-110580126301.europe-west1.run.app,OAUTHLIB_INSECURE_TRANSPORT=false'
       - '--memory=512Mi'
       - '--timeout=3600'
       - '--max-instances=10'
 
 # Push the image to Container Registry
 images:
-  - 'gcr.io/$PROJECT_ID/autoplanner:$SHORT_SHA'
   - 'gcr.io/$PROJECT_ID/autoplanner:latest'
 
 # Timeout for the build process

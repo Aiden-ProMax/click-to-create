@@ -48,6 +48,115 @@ gcloud run deploy autoplanner \
 
 ### 项目状态
 - 文件整理: ✅ 完成 (2026-02-19)
+
+---
+
+## 2026-02-20 - GitHub 仓库集成到 Cloud Build ✅
+
+### 集成概述
+- **GitHub 仓库**: jiaoyan/click-to-create
+- **Cloud Build 连接**: github-conn
+- **部署方式**: 从 GitHub 源构建（替代直接源部署）
+- **构建配置**: cloudbuild.yaml
+- **部署方法**: 版本可回溯 + 自动构建
+
+### 执行的操作
+
+#### 1. 启用必要的 API
+- ✅ Cloud Build API (cloudbuild.googleapis.com)
+- ✅ Secret Manager API (secretmanager.googleapis.com)
+- ✅ Cloud Run API (run.googleapis.com)
+- ✅ Artifact Registry API (artifactregistry.googleapis.com)
+
+#### 2. IAM 权限配置
+Cloud Build Service Account (`service-110580126301@gcp-sa-cloudbuild.iam.gserviceaccount.com`) 分配权限:
+- `roles/secretmanager.admin` - 管理 GitHub token
+- `roles/secretmanager.secretAccessor` - 访问 token
+- `roles/run.admin` - 部署到 Cloud Run
+- `roles/iam.serviceAccountUser` - 使用 service account
+
+#### 3. GitHub 连接创建
+```bash
+gcloud builds connections create github github-conn --region=us-central1
+```
+状态: ✅ 已创建，等待用户 OAuth 授权
+
+#### 4. Cloud Build 配置文件
+创建 `cloudbuild.yaml`:
+- **第1步**: 构建 Docker 镜像 → `gcr.io/$PROJECT_ID/autoplanner:$SHORT_SHA`
+- **第2步**: 推送到 Container Registry
+- **第3步**: 部署到 Cloud Run (us-central1)
+- **镜像标签**: Git commit SHA (可追溯版本)
+
+#### 5. 部署脚本
+创建两个辅助脚本:
+- `setup_github_integration.sh` - GitHub 授权指导
+- `deploy_from_github.sh` - 手动触发 GitHub 构建和部署
+
+### 集成方案
+**方案 A: 自动触发（需要用户授权）**
+1. 用户访问 GitHub 认证链接
+2. Cloud Build 存储 GitHub token 到 Secret Manager
+3. 每次 push 到 main 分支自动触发构建
+4. 自动部署到 Cloud Run
+
+**方案 B: 手动触发**
+```bash
+./deploy_from_github.sh main
+```
+
+### 下一步
+1. **完成 GitHub 授权**: 访问 Google Cloud Console 手动授权
+2. **关联 GitHub 仓库**: 连接 jiaoyan/click-to-create
+3. **创建构建触发器**: 配置 main 分支 → Cloud Build
+4. **测试部署**: Push 到 GitHub 验证自动构建
+
+### 优势
+✅ 版本可完全回溯（基于 Git commit）  
+✅ 审计追踪完整（所有构建有源追踪）  
+✅ 支持 PR 验证（构建测试）  
+✅ 安全管理敏感信息（Secret Manager）  
+✅ 自动扩展（Cloud Run 无服务器）
+
+---
+
+## 2026-02-20 - Cloud Build 首次构建测试 ✅
+
+### 构建状态
+- **构建 ID**: 36338add-c65c-432b-a3ef-f6918de6faae
+- **触发时间**: 2026-02-20 19:45:53 UTC
+- **构建方式**: 从本地目录提交 (`gcloud builds submit .`)
+- **配置文件**: cloudbuild.yaml
+
+### 构建流程
+1. **构建 Docker 镜像**: `gcr.io/click-to-create/autoplanner:latest`
+2. **推送到 Container Registry**: 存储到 GCR
+3. **部署到 Cloud Run**: 自动部署到 us-central1
+
+### 技术细节
+- 使用 Cloud Builders: docker + gcloud
+- 镜像标签: latest（便于跟踪，Git 集成后将使用 commit SHA）
+- 部署配置: 相同的生产环境设置
+- 超时设置: 3600s（1小时）
+
+### 部署脚本
+创建两个便利脚本:
+- `deploy_from_github.sh` - 可从本地或 GitHub 触发构建
+- `setup_github_integration.sh` - GitHub 授权说明
+
+### 现状总结
+✅ gcloud CLI + GitHub 仓库连接已建立  
+✅ Cloud Build 权限已配置（Secret Manager、Cloud Run）  
+✅ GitHub 连接已创建（等待用户 OAuth 授权）  
+✅ cloudbuild.yaml 已创建并测试成功  
+✅ 首次构建已提交并等待完成  
+
+### 下一步验证
+等待首次构建完成，然后：
+1. 检查 Cloud Run 是否成功部署新版本
+2. 测试应用端点
+3. 验证构建日志
+4. 配置 GitHub 自动触发（需要 OAuth 完成）
 - 部署文档: ✅ 完成 (2026-02-19)
 - Cloud Run 部署: ✅ 成功 (2026-02-20)
 

@@ -1,5 +1,56 @@
 # 操作日志
 
+## 2026-02-20 - 修复 Google OAuth 500 错误 ✅
+
+### 问题描述
+- **症状**: 点击"Connect to Google Calendar"返回 500 Internal Server Error
+- **根本原因**: `webclient.json` 文件在 Cloud Run 容器中找不到
+  ```
+  FileNotFoundError: [Errno 2] No such file or directory: '/app/webclient.json'
+  ```
+- **错误位置**: `google_sync/services.py:57` 在 `get_google_oauth_flow()` 函数中
+
+### 修复方案
+**方案**: 支持从环境变量读取 Google OAuth 凭证（JSON 格式）
+
+**修改文件**: `google_sync/services.py`
+- 添加 `json` 和 `os` 导入
+- 修改 `get_google_oauth_flow()` 函数以支持两种方式：
+  1. **环境变量优先** (`GOOGLE_OAUTH_CLIENT_JSON`): 包含 JSON 字符串的环境变量
+  2. **文件备选** (`GOOGLE_OAUTH_CLIENT_JSON_PATH`): 本地文件路径（开发用）
+- 使用 `Flow.from_client_config()` 替代 `Flow.from_client_secrets_file()`
+
+### 部署步骤
+1. ✅ 代码修改完成
+2. ⏳ 需要在部署时设置环境变量
+
+### 部署命令（需要执行）
+```bash
+cd /Users/jiaoyan/AutoPlanner
+
+# 设置 Google OAuth 凭证环境变量
+export GOOGLE_OAUTH_CLIENT_JSON='{"web":{"client_id":"...","client_secret":"..."}}'
+
+# 部署到 Cloud Run
+gcloud run deploy clickcreate \
+  --source . \
+  --platform managed \
+  --region us-west1 \
+  --allow-unauthenticated \
+  --set-env-vars \
+'ENVIRONMENT=production,DJANGO_SECRET_KEY=autoplanner-django-secret-key-prod-2026,DB_NAME=autoplanner,DB_USER=autoplanner_user,DB_PASSWORD=VUKk2Dr44GI3VDaMyseKPh3a1Mel486rnwEeUPAiVfU,CLOUD_SQL_CONNECTION_NAME=click-to-create:us-west1:autoplanner-db-prod-uswest,GOOGLE_OAUTH_CLIENT_JSON='"'"'{JSON_STRING_HERE}'"'"',OAUTHLIB_INSECURE_TRANSPORT=false' \
+  --add-cloudsql-instances=click-to-create:us-west1:autoplanner-db-prod-uswest \
+  --memory=512Mi \
+  --timeout=3600 \
+  --max-instances=10 \
+  --quiet
+```
+
+### 测试结果
+- ⏳ 待部署后测试
+
+---
+
 ## 2026-02-20 - Google Cloud Run 部署成功 ✅
 
 ### 部署概述

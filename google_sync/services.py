@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, time
 import re
@@ -50,15 +52,48 @@ def _extract_valid_emails(raw: str | None) -> list[str]:
 
 
 def get_google_oauth_flow(state: str | None = None, *, disable_state_check: bool = False) -> Flow:
+    """Get Google OAuth Flow for Calendar authentication.
+    
+    Supports two methods:
+    1. From file path: GOOGLE_OAUTH_CLIENT_JSON_PATH (default: ./webclient.json)
+    2. From JSON string: GOOGLE_OAUTH_CLIENT_JSON (environment variable with JSON string)
+    
+    This handles the case where webclient.json is not available in container deployment.
+    """
     scopes = settings.GOOGLE_OAUTH_SCOPES
     if isinstance(scopes, str):
         scopes = [s for s in scopes.split(',') if s]
-    flow = Flow.from_client_secrets_file(
-        settings.GOOGLE_OAUTH_CLIENT_JSON_PATH,
-        scopes=scopes,
-        state=state,
-        redirect_uri=settings.GOOGLE_OAUTH_REDIRECT_URI if disable_state_check else None,
-    )
+    
+    client_json_path = settings.GOOGLE_OAUTH_CLIENT_JSON_PATH
+    client_json_env = os.getenv('GOOGLE_OAUTH_CLIENT_JSON')
+    
+    # Try to load from environment variable JSON first (for container deployments)
+    if client_json_env:
+        try:
+            client_config = json.loads(client_json_env)
+            flow = Flow.from_client_config(
+                client_config,
+                scopes=scopes,
+                state=state,
+                redirect_uri=settings.GOOGLE_OAUTH_REDIRECT_URI if disable_state_check else None,
+            )
+        except (json.JSONDecodeError, KeyError) as e:
+            raise ValueError(f"Invalid GOOGLE_OAUTH_CLIENT_JSON environment variable: {e}")
+    # Fall back to file-based loading
+    elif os.path.exists(client_json_path):
+        flow = Flow.from_client_secrets_file(
+            client_json_path,
+            scopes=scopes,
+            state=state,
+            redirect_uri=settings.GOOGLE_OAUTH_REDIRECT_URI if disable_state_check else None,
+        )
+    else:
+        raise FileNotFoundError(
+            f"Google OAuth credentials not found. "
+            f"Set GOOGLE_OAUTH_CLIENT_JSON environment variable with JSON string "
+            f"or ensure {client_json_path} file exists."
+        )
+    
     flow.redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
     if disable_state_check:
         flow.state = None

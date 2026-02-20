@@ -13,25 +13,29 @@ steps:
       - 'push'
       - 'gcr.io/$PROJECT_ID/autoplanner:latest'
 
-  # Step 3: Deploy to Cloud Run
+  # Step 3: Deploy clickcreate service to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
-      - 'autoplanner'
+      - 'clickcreate'
       - '--image=gcr.io/$PROJECT_ID/autoplanner:latest'
-      - '--region=us-central1'
+      - '--region=europe-west1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'ENVIRONMENT=production,DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY},DJANGO_ALLOWED_HOSTS=autoplanner-110580126301.europe-west1.run.app,OAUTHLIB_INSECURE_TRANSPORT=false'
+      - 'ENVIRONMENT=production,DJANGO_SECRET_KEY=${_DJANGO_SECRET_KEY},OAUTHLIB_INSECURE_TRANSPORT=false'
       - '--memory=512Mi'
       - '--timeout=3600'
       - '--max-instances=10'
 
-# Push the image to Container Registry
+# Images to push to Container Registry
 images:
   - 'gcr.io/$PROJECT_ID/autoplanner:latest'
 
-# Timeout for the build process
+# Build timeout
 timeout: '3600s'
+
+# Substitutions for build variables
+substitutions:
+  _DJANGO_SECRET_KEY: 'autoplanner-django-secret-key-prod-2026'

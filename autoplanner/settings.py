@@ -44,7 +44,13 @@ ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split('
 # Cloud Run specific settings
 if os.getenv('ENVIRONMENT') == 'production':
     DEBUG = False
-    ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
+    # Get allowed hosts from env var, fallback to allowing all *.run.app domains for Cloud Run
+    allowed_hosts = os.getenv('DJANGO_ALLOWED_HOSTS', '').strip()
+    if allowed_hosts:
+        ALLOWED_HOSTS = [h.strip() for h in allowed_hosts.split(',') if h.strip()]
+    else:
+        # Allow all Cloud Run domains
+        ALLOWED_HOSTS = ['*']
     # Cloud Run uses Google Frontend Load Balancer which handles SSL/TLS
     # The request arrives to the Django app already as HTTPS, but Django sees it as HTTP
     # We need to trust the X-Forwarded-Proto header from the Load Balancer

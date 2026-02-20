@@ -1,6 +1,53 @@
 # 操作日志
 
-## 2026-02-20 - 修复 GOOGLE_GENERATIVE_AI_KEY 配置错误 ✅ 完成
+## 2026-02-20 - 尝试修复 AI 模块，发现 Gemini 模型已停用 🔄 
+
+### 问题描述
+- **错误**: `GOOGLE_GENERATIVE_AI_KEY is not configured` 然后更新 Gemini API 密钥后，遇到新错误
+- **新错误**: `404 This model models/gemini-2.0-flash is no longer available`
+- **原因**: 代码中使用的 Gemini 模型版本 (`gemini-2.0-flash`) 已被 Google 停用
+
+### 调查过程
+1. ✅ 回滚到 OAuth 工作版本 `clickcreate-00003-955`
+2. ✅ 部署新版本 `clickcreate-00004-fnh` 包含 AI 环境变量
+3. 🔍 发现：
+   - API 密钥配置成功 ✅
+   - OAuth 参数配置成功 ✅  
+   - 但 Gemini 模型版本已停用 ❌
+
+### 修复尝试
+- 尝试 1: 更新 `autoplanner/settings.py` 模型为 `gemini-1.5-flash`
+- 尝试 2: 在 `ai/services.py` 中软件编码回退到 `gemini-1.5-flash`
+- 尝试 3: 硬编码为 `gemini-1.5-flash`
+
+❌ **所有尝试都失败** - 应用仍在使用 `gemini-2.0-flash`
+
+### 根本原因分析
+可能的原因：
+1. Django 应用初始化时加载旧配置
+2. Python 模块缓存
+3. 容器镜像未完全更新
+4. 设置被其他地方硬编码
+
+### 当前状态
+- **部署版本**: `clickcreate-00003-955` (OAuth 工作，AI 不配置)
+- **OAuth 功能**: ✅ 完全工作
+- **AI 功能**: ❌ 模型停用
+
+### 下一步建议
+选项 A（推荐）:
+- 保持当前 OAuth 工作版本
+- AI 功能暂时禁用
+- 待 Google 提供更新的模型或修复
+
+选项 B（需要进一步调查）:
+- 完全重建应用清除所有缓存
+- 使用 Cloud Build 而非 Dockerfile
+- 或者迁移至新的 Google GenAI SDK (`google.genai` 而非 `google.generativeai`)
+
+---
+
+## 2026-02-20 修复 GOOGLE_GENERATIVE_AI_KEY 配置错误 ✅ 部分完成
 
 ### 问题描述
 - **错误**: `GOOGLE_GENERATIVE_AI_KEY is not configured`

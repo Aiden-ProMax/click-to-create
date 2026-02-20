@@ -26,16 +26,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
 # Allow OAuth over HTTP in development (required for localhost testing)
-if os.getenv('OAUTHLIB_INSECURE_TRANSPORT', '').lower() == 'true':
-    import os
+# PRODUCTION: This MUST be false to use HTTPS only
+if os.getenv('ENVIRONMENT') == 'development' and os.getenv('OAUTHLIB_INSECURE_TRANSPORT', '').lower() == 'true':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-secret-key')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY and os.getenv('ENVIRONMENT') != 'development':
+    raise ValueError("DJANGO_SECRET_KEY environment variable is not set!")
+if not SECRET_KEY:
+    SECRET_KEY = 'dev-secret-key'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# Cloud Run specific settings
+if os.getenv('ENVIRONMENT') == 'production':
+    DEBUG = False
+    ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
+    # Cloud Run uses Google Frontend Load Balancer which handles SSL/TLS
+    # The request arrives to the Django app already as HTTPS, but Django sees it as HTTP
+    # We need to trust the X-Forwarded-Proto header from the Load Balancer
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False  # Disable SSL redirect as load balancer handles it
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Application definition
@@ -88,12 +107,26 @@ WSGI_APPLICATION = 'autoplanner.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.getenv('ENVIRONMENT') == 'production':
+    # Use Cloud SQL in production
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'autoplanner'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': f'/cloudsql/{os.getenv("CLOUD_SQL_CONNECTION_NAME")}',
+            'PORT': '5432',
+        }
     }
-}
+else:
+    # Use SQLite in development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -132,8 +165,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Cloud Storage for static files in production
+if os.getenv('ENVIRONMENT') == 'production':
+    try:
+        from storages.backends.gcloud import GoogleCloudStorage
+        DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+        GS_BUCKET_NAME = os.getenv('GCS_BUCKET_NAME', 'autoplanner-static')
+        GS_PROJECT_ID = os.getenv('GCP_PROJECT_ID', '')
+        STATIC_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/static/'
+    except ImportError:
+        # Fall back to local static files if google-cloud-storage is not installed
+        pass
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -175,3 +221,29 @@ GOOGLE_OAUTH_SCOPES = os.getenv(
     'GOOGLE_OAUTH_SCOPES',
     'https://www.googleapis.com/auth/calendar.events',
 )
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'json': {
+            'format': '{{"time": "{asctime}", "level": "{levelname}", "message": "{message}", "module": "{module}"}}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json' if os.getenv('ENVIRONMENT') == 'production' else 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.getenv('LOG_LEVEL', 'INFO'),
+    },
+}

@@ -1,5 +1,58 @@
 # 操作日志
 
+## 2026-02-20 - Google Cloud Run 部署成功 ✅
+
+### 部署概述
+- **项目**: click-to-create (AutoPlanner)
+- **平台**: Google Cloud Run (us-central1)
+- **容器**: Python 3.12, Django 6.0, Gunicorn
+- **状态**: ✅ 部署成功
+- **应用 URL**: https://autoplanner-110580126301.us-central1.run.app
+
+### 执行的操作
+
+#### 1. IAM 权限配置
+服务账户 `110580126301-compute@developer.gserviceaccount.com` 分配权限:
+- `roles/editor` - 基础权限
+- `roles/storage.admin` - Cloud Storage
+- `roles/cloudbuild.builds.editor` - Cloud Build
+- `roles/artifactregistry.admin` - Artifact Registry
+
+#### 2. Cloud Run 部署
+```bash
+gcloud run deploy autoplanner \
+  --source .                     # 直接从源代码部署
+  --platform managed             # Cloud Run 托管平台
+  --region us-central1           # 美国中部
+  --allow-unauthenticated        # 公开访问
+  --timeout=3600                 # 部署超时 1 小时
+  --memory=512Mi                 # 内存 512MB
+  --max-instances=10             # 最多 10 个实例
+```
+
+#### 3. 环境变量配置
+- `ENVIRONMENT=production` - 生产环境
+- `GOOGLE_GENERATIVE_AI_KEY=$GEMINI_API_KEY` - Gemini API
+- `DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY` - Django 密钥
+- `DJANGO_ALLOWED_HOSTS=autoplanner-prod.run.app` - 允许的主机
+- `OAUTHLIB_INSECURE_TRANSPORT=false` - HTTPS only
+
+#### 4. 部署特性
+- 自动构建: Cloud Build (Dockerfile)
+- 自动缩放: 1-10 实例
+- 无服务器: 无需管理服务器
+- 日志: Cloud Logging 集成
+
+### 部署结果
+✅ **成功** - 应用已上线且可访问
+
+### 项目状态
+- 文件整理: ✅ 完成 (2026-02-19)
+- 部署文档: ✅ 完成 (2026-02-19)
+- Cloud Run 部署: ✅ 成功 (2026-02-20)
+
+---
+
 ## 2026-02-04
 - 切换技术路线：弃用 Radicale/CalDAV，改用 Google Calendar API（OAuth Web 应用）。
 - 新增 `google_sync` 应用：OAuth 授权、token 存储、事件同步接口。

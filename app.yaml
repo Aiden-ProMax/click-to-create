@@ -1,0 +1,16 @@
+runtime: python312
+
+entrypoint: gunicorn -w 4 -b :$PORT autoplanner.wsgi:application
+
+env:
+  ENVIRONMENT: "production"
+
+# Cloud SQL Proxy is automatically configured by Cloud Run
+# when using the CLOUD_SQL_CONNECTION_NAME in your environment
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+
+# Build options
+serviceAccount: autoplanner-app@<GCP_PROJECT_ID>.iam.gserviceaccount.com

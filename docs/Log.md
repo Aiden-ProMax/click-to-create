@@ -1,5 +1,85 @@
 # 操作日志
 
+## 2026-02-20 - 修复 GOOGLE_GENERATIVE_AI_KEY 配置错误 ✅ 完成
+
+### 问题描述
+- **错误**: `GOOGLE_GENERATIVE_AI_KEY is not configured`
+- **症状**: AI 解析功能无法使用，应用报错
+- **原因**: 生产环境的环境变量部分缺失，特别是 Gemini API 密钥
+
+### 根本原因分析
+1. 之前的部署只更新了 `GOOGLE_OAUTH_REDIRECT_URI`，使用了 `--update-env-vars` 参数
+2. 这个参数只更新单个变量，导致其他关键环境变量丢失
+3. 包括 `GOOGLE_GENERATIVE_AI_KEY`、`DJANGO_SECRET_KEY` 等关键变量
+
+### 修复方案 ✅
+**操作步骤**:
+1. ✅ 创建完整的环境变量配置文件 `/tmp/deploy_env.yaml`
+2. ✅ 使用 `--env-vars-file` 参数部署，确保所有环境变量都被设置
+3. ✅ 应用成功部署（Revision: clickcreate-00004-fnh）
+
+### 已配置的环境变量 ✅
+```
+ENVIRONMENT: production
+GOOGLE_GENERATIVE_AI_KEY: AIzaSyDi4bIFdmIxOaHieNvAXm1ZGieIla4-Cpc
+GOOGLE_OAUTH_CLIENT_JSON: (Web OAuth credentials)
+GOOGLE_OAUTH_REDIRECT_URI: https://clickcreate-110580126301.us-west1.run.app/oauth/google/callback
+DJANGO_SECRET_KEY: (Configured)
+DJANGO_ALLOWED_HOSTS: clickcreate-110580126301.us-west1.run.app
+OAUTHLIB_INSECURE_TRANSPORT: false
+CLOUD_SQL_CONNECTION_NAME: click-to-create:us-west1:autoplanner-db-prod-uswest
+DB_NAME: autoplanner
+DB_USER: autoplanner_user
+DB_PASSWORD: (Configured)
+```
+
+### 关键学习
+- 使用 `--update-env-vars` 时要小心，它只更新指定的变量
+- 大规模部署应该使用 `--env-vars-file` 确保完整的配置
+- 总是验证部署后的环境变量是否完整
+
+---
+
+## 2026-02-20 - 修复 OAuth redirect_uri_mismatch 错误 ✅ 完成
+
+### 问题描述
+- **错误**: `Error 400: redirect_uri_mismatch` 
+- **症状**: 点击"Connect to Google"时显示"Access blocked: This app's request is invalid"
+- **原因**: 生产环境的 redirect_uri 与 Google OAuth 应用配置不匹配
+
+### 根本原因分析
+1. 代码中 `GOOGLE_OAUTH_REDIRECT_URI` 默认值为 `http://localhost:8000/oauth/google/callback`（本地开发用）
+2. 生产环境部署到 `https://clickcreate-110580126301.us-west1.run.app`，但环境变量未设置
+3. Google OAuth 应用配置中未添加生产环境的 redirect_uri
+
+### 修复方案 ✅
+**修改文件**:
+- `deploy_with_oauth.sh` - 添加 `GOOGLE_OAUTH_REDIRECT_URI` 环境变量
+- 部署脚本 - 使用 `--update-env-vars` 参数更新生产环境
+
+**操作步骤**:
+1. ✅ 更新 `deploy_with_oauth.sh` 脚本，添加正确的 redirect_uri
+2. ✅ 重新部署应用到 Cloud Run，环境变量已更新为：
+   ```
+   GOOGLE_OAUTH_REDIRECT_URI=https://clickcreate-110580126301.us-west1.run.app/oauth/google/callback
+   ```
+3. ✅ 应用成功部署（Revision: clickcreate-00003-955）
+4. 📋 用户需要在 Google Cloud Console 中添加授权重定向 URI
+
+### Google OAuth 配置更新（用户操作）
+需要在 Google Cloud Console 中：
+1. 访问 APIs & Services → Credentials
+2. 编辑 Web application OAuth 2.0 客户端
+3. 添加授权重定向 URI：
+   ```
+   https://clickcreate-110580126301.us-west1.run.app/oauth/google/callback
+   ```
+4. 保存更改
+
+**参考文档**: [docs/OAUTH_FIX_GUIDE.md](OAUTH_FIX_GUIDE.md)
+
+---
+
 ## 2026-02-20 - 修复 Google OAuth 500 错误 ✅ 完成
 
 ### 问题描述

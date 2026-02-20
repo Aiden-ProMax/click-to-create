@@ -83,8 +83,10 @@ def parse_with_openai(text: str) -> dict:
         )
 
         # 创建模型实例
+        # 使用 gemini-1.5-flash (gemini-2.0-flash 已停用)
+        model_name = settings.GOOGLE_GENERATIVE_AI_MODEL or 'gemini-1.5-flash'
         model = genai.GenerativeModel(
-            model_name=settings.GOOGLE_GENERATIVE_AI_MODEL,
+            model_name=model_name,
             system_instruction=SYSTEM_PROMPT
         )
         

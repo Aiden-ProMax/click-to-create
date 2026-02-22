@@ -83,10 +83,10 @@ def parse_with_openai(text: str) -> dict:
         )
 
         # 创建模型实例
-        # 使用 gemini-1.5-flash 是最新推荐的高效模型
+        # 使用 gemini-2.5-flash 是最新推荐的高效模型
         # 对于旧 API 版本不兼容，已升级 google-generativeai>=0.5.0
         model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
+            model_name='gemini-2.5-flash',
             system_instruction=SYSTEM_PROMPT
         )
         

@@ -198,7 +198,7 @@ REST_FRAMEWORK = {
 
 # Google Generative AI
 GOOGLE_GENERATIVE_AI_KEY = os.getenv('GOOGLE_GENERATIVE_AI_KEY', '')
-GOOGLE_GENERATIVE_AI_MODEL = os.getenv('GOOGLE_GENERATIVE_AI_MODEL', 'gemini-1.5-flash')
+GOOGLE_GENERATIVE_AI_MODEL = os.getenv('GOOGLE_GENERATIVE_AI_MODEL', 'gemini-1.0-pro')
 
 # Radicale (CalDAV) settings
 RADICALE_BASE_URL = os.getenv('RADICALE_BASE_URL', 'https://localhost:5232')

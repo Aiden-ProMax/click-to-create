@@ -83,10 +83,10 @@ def parse_with_openai(text: str) -> dict:
         )
 
         # 创建模型实例
-        # 使用 gemini-1.5-flash (gemini-2.0-flash 已停用)
-        # 强制使用 gemini-1.5-flash
+        # 使用 gemini-1.0-pro (性能和成本平衡)
+        # 支持 generateContent 方法，适合自然语言解析
         model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
+            model_name='gemini-1.0-pro',
             system_instruction=SYSTEM_PROMPT
         )
         

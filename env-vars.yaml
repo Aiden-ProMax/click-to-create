@@ -1,0 +1,11 @@
+ENVIRONMENT: production
+GOOGLE_GENERATIVE_AI_KEY: AIzaSyDi4bIFdmIxOaHieNvAXm1ZGieIla4-Cpc
+DJANGO_SECRET_KEY: VWFor88gStUEL9FTRoHS3RL4Adzvpbjkqv-E_x6Yl5Wh_8-aUdUQgv4UG7MWq4EhQD-jWs1YgwnEWzALDTP_-g
+DJANGO_ALLOWED_HOSTS: clickcreate-110580126301.us-west2.run.app
+DB_NAME: autoplanner
+DB_USER: autoplanner_user
+DB_PASSWORD: VUKk2Dr44GI3VDaMyseKPh3a1Mel486rnwEeUPAiVfU
+CLOUD_SQL_CONNECTION_NAME: click-to-create:us-west1:autoplanner-db-prod-uswest
+GOOGLE_OAUTH_REDIRECT_URI: https://clickcreate-110580126301.us-west2.run.app/oauth/google/callback
+GOOGLE_OAUTH_CLIENT_JSON: '{"web":{"client_id":"110580126301-numum3bhq595fc4pnse3a7lgj24ua00s.apps.googleusercontent.com","project_id":"click-to-create","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"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"}}'
+OAUTHLIB_INSECURE_TRANSPORT: "false"

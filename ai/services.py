@@ -5,9 +5,9 @@ import time
 from datetime import datetime
 import re
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from django.conf import settings
-from google.api_core.exceptions import ResourceExhausted
 
 logger = logging.getLogger(__name__)
 
@@ -65,14 +65,18 @@ Schema for each event:
 
 def parse_with_openai(text: str) -> dict:
     """
-    使用 Google Generative AI (Gemini) 解析自然语言为结构化事件数据
+    使用 Google Generative AI (Gemini 3 Flash) 解析自然语言为结构化事件数据
+    
+    使用新的 google.genai SDK 和 gemini-3-flash-preview 模型
     """
     if not settings.GOOGLE_GENERATIVE_AI_KEY:
         raise ValueError('GOOGLE_GENERATIVE_AI_KEY is not configured')
 
     try:
-        # 配置 Google Generative AI
-        genai.configure(api_key=settings.GOOGLE_GENERATIVE_AI_KEY)
+        # 使用新的 SDK 初始化客户端
+        client = genai.Client(
+            api_key=settings.GOOGLE_GENERATIVE_AI_KEY
+        )
         
         current_date = datetime.now().date().isoformat()
         default_tz = settings.TIME_ZONE or 'UTC'
@@ -82,43 +86,54 @@ def parse_with_openai(text: str) -> dict:
             user_text=_sanitize_user_text(text)
         )
 
-        # 创建模型实例
-        # 使用 gemini-2.5-flash 是最新推荐的高效模型
-        # 对于旧 API 版本不兼容，已升级 google-generativeai>=0.5.0
-        model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
-            system_instruction=SYSTEM_PROMPT
+        # 创建请求配置
+        # Gemini 3 建议保持温度为默认值 1.0 以获得最佳性能
+        # 不在这里设置温度，使用 API 默认设置
+        config = types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            thinking_config=types.ThinkingConfig(thinking_level="low"),  # 低思考级别以加快响应
         )
         
         # 调用 API（对 429 做指数退避重试）
         max_attempts = 4
         base_delay = 0.6
         response = None
+        
         for attempt in range(1, max_attempts + 1):
             try:
-                response = model.generate_content(
-                    user_prompt,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.3,  # 降低温度以获得更一致的 JSON 输出
-                    )
+                response = client.models.generate_content(
+                    model='gemini-3-flash-preview',
+                    contents=user_prompt,
+                    config=config
                 )
                 break
-            except ResourceExhausted as exc:
-                if attempt == max_attempts:
+            except Exception as exc:
+                # 检查是否是速率限制错误
+                error_msg = str(exc)
+                if '429' in error_msg or 'quota' in error_msg.lower():
+                    if attempt == max_attempts:
+                        raise
+                    # 指数退避 + jitter
+                    sleep_for = min(6.0, base_delay * (2 ** (attempt - 1)))
+                    sleep_for += random.uniform(0, 0.4)
+                    logger.warning(f"Google AI rate limited (429). Retry {attempt}/{max_attempts-1} in {sleep_for:.2f}s")
+                    time.sleep(sleep_for)
+                else:
+                    # 非速率限制错误，直接抛出
                     raise
-                # 截断指数退避 + jitter
-                sleep_for = min(6.0, base_delay * (2 ** (attempt - 1)))
-                sleep_for += random.uniform(0, 0.4)
-                logger.warning(f"Google AI rate limited (429). Retry {attempt}/{max_attempts-1} in {sleep_for:.2f}s")
-                time.sleep(sleep_for)
         
         # 检查是否有有效的响应
-        if not response or not response.text:
+        if not response:
             logger.error(f"Google AI returned empty response")
             raise ValueError('Google AI returned empty response')
         
         # 提取响应文本
-        content = response.text.strip()
+        if hasattr(response, 'text') and response.text:
+            content = response.text.strip()
+        else:
+            # 新的 SDK 可能返回不同的结构
+            content = str(response).strip()
+        
         # Print full raw response to server console for debugging
         print("AI raw response:", content)
         logger.debug(f"Google AI raw response: {content[:200]}")

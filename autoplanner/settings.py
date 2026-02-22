@@ -61,6 +61,17 @@ if os.getenv('ENVIRONMENT') == 'production':
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    
+    # Allow requests from Cloud Run domain for CSRF verification
+    # In Cloud Run, requests may not have Referer header from frontend
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.run.app',
+        'https://clickcreate-110580126301.us-west2.run.app',
+    ]
+    
+    # For Cloud Run API requests without Referer header, we trust the X-CSRFToken header
+    # This is more lenient but acceptable since we're using HTTPS and X-CSRFToken validation
+    CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 
 
 # Application definition
@@ -84,7 +95,8 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # Use custom CSRF middleware for Cloud Run compatibility
+    'autoplanner.csrf_middleware.CloudRunCsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -115,16 +127,33 @@ WSGI_APPLICATION = 'autoplanner.wsgi.application'
 
 if os.getenv('ENVIRONMENT') == 'production':
     # Use Cloud SQL in production
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'autoplanner'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': f'/cloudsql/{os.getenv("CLOUD_SQL_CONNECTION_NAME")}',
-            'PORT': '5432',
+    # In Cloud Run, Cloud SQL connectivity is established via Unix socket at /cloudsql/
+    instance_connection_name = os.getenv("CLOUD_SQL_CONNECTION_NAME", "")
+    
+    if instance_connection_name:
+        # Use Cloud SQL Proxy via Unix socket
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME', 'autoplanner'),
+                'USER': os.getenv('DB_USER', 'postgres'),
+                'PASSWORD': os.getenv('DB_PASSWORD', ''),
+                'HOST': f'/cloudsql/{instance_connection_name}',
+                'PORT': '5432',
+            }
         }
-    }
+    else:
+        # Fallback: Try to connect directly (for local Cloud Run testing)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME', 'autoplanner'),
+                'USER': os.getenv('DB_USER', 'postgres'),
+                'PASSWORD': os.getenv('DB_PASSWORD', ''),
+                'HOST': os.getenv('DB_HOST', 'localhost'),
+                'PORT': os.getenv('DB_PORT', '5432'),
+            }
+        }
 else:
     # Use SQLite in development
     DATABASES = {
@@ -133,6 +162,23 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+# CSRF Configuration for HTTPS environments (Cloud Run, production)
+# Don't enforce Referer checking for HTTPS requests in Cloud Run
+# The X-CSRFToken header validation is sufficient for HTTPS
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token for API requests
+
+# Disable Referer checking in production for Cloud Run compatibility
+# Safe because:
+# 1. HTTPS enforced by load balancer (no MITM possible)
+# 2. X-CSRFToken header validation still active
+# 3. SameSite=Lax on cookies prevents cross-site attacks
+if os.getenv('ENVIRONMENT') == 'production':
+    CSRF_USE_SESSIONS = False
+    # In production on Cloud Run, disable referer checking
+    # This middleware-level override happens in csrf_middleware.py
+    CSRF_COOKIE_SECURE = True
 
 
 # Password validation

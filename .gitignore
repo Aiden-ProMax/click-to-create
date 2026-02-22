@@ -41,7 +41,8 @@ db.sqlite3
 local_settings.py
 /staticfiles/
 /media/
-/static/
+/static/*
+!/static/logo.jpg
 
 # VS Code
 .vscode/

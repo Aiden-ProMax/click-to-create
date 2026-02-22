@@ -83,10 +83,10 @@ def parse_with_openai(text: str) -> dict:
         )
 
         # 创建模型实例
-        # 使用最新的实验模型 gemini-2.0-flash-exp
-        # 如果不可用，将回退到环境变量中的模型名或 gemini-pro
-        model_name = settings.GOOGLE_GENERATIVE_AI_MODEL or 'gemini-2.0-flash-exp'
-        logger.info(f'Initializing AI model: {model_name}')
+        # 直接使用已知可用的模型 gemini-pro
+        # (用于诊断环境变量/缓存问题)
+        model_name = 'gemini-pro'
+        logger.info(f'Initializing AI model: {model_name} (hardcoded for testing)')
         
         model = genai.GenerativeModel(
             model_name=model_name,

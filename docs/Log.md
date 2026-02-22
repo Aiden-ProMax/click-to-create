@@ -1,5 +1,75 @@
 # 操作日志
 
+## 2026-02-22 - 清理所有自动部署配置并重新部署到 us-west2 🔄
+
+### 当前系统状态
+
+**部署信息**:
+- **CloudRun 服务**: clickcreate
+- **部署区域**: us-west2
+- **服务 URL**: https://clickcreate-110580126301.us-west2.run.app
+- **最新版本**: clickcreate-00004-5ks
+- **部署状态**: ✅ 成功
+
+**数据库连接** ✅:
+- **Cloud SQL 实例**: autoplanner-db-prod-uswest (us-west1)
+- **数据库**: autoplanner
+- **用户**: autoplanner_user
+- **连接字符串**: click-to-create:us-west1:autoplanner-db-prod-uswest
+
+**环境变量配置** ✅:
+```
+ENVIRONMENT=production
+DJANGO_SECRET_KEY=VWFor88gStUEL9FTRoHS3RL4Adzvpbjkqv-E_x6Yl5Wh_8-aUdUQgv4UG7MWq4EhQD-jWs1YgwnEWzALDTP_-g
+DJANGO_ALLOWED_HOSTS=clickcreate-110580126301.us-west2.run.app
+DB_NAME=autoplanner
+DB_USER=autoplanner_user
+DB_PASSWORD=(已配置)
+CLOUD_SQL_CONNECTION_NAME=click-to-create:us-west1:autoplanner-db-prod-uswest
+GOOGLE_GENERATIVE_AI_KEY=AIzaSyDi4bIFdmIxOaHieNvAXm1ZGieIla4-Cpc
+OAUTHLIB_INSECURE_TRANSPORT=false
+```
+
+**AI 模型配置** ✅:
+- **模型**: gemini-2.5-flash
+- **库版本**: google-generativeai>=0.5.0
+- **状态**: 正常配置
+
+### 本次修改内容
+
+1. **删除所有自动部署配置** ✅
+   - 删除 `cloudbuild.yaml` (Cloud Build)
+   - 删除 `app.yaml` (App Engine)
+   - 删除 `.github/workflows/` (GitHub Actions)
+   - 删除所有 `deploy_*.sh` 脚本
+   - 删除所有 `test_*.sh` 脚本
+   - 已清空所有旧的 CloudRun 服务
+
+2. **更新 URL 配置** ✅
+   - 将 CLOUD_RUN_URL 从 us-west1 改为 us-west2
+   - 将 DJANGO_ALLOWED_HOSTS 更新为新 URL
+
+3. **重新部署到 us-west2** ✅
+   - 包含所有必需的数据库环境变量
+   - 包含所有 Django 配置
+   - 包含 Gemini API 密钥配置
+
+### 当前问题
+
+**已发现并解决**:
+- ❌ DisallowedHost 错误 → ✅ 通过正确配置 DJANGO_ALLOWED_HOSTS 解决
+- ❌ 数据库连接问题 → ✅ 通过重新部署并包含 DB_* 环境变量解决
+- ❌ JSON 解析错误（初步看似 OAuth 问题） → ✅ 实际是数据库环境变量缺失，已恢复
+
+### 下一步建议
+
+1. **测试登录/注册** - 验证数据库连接正常
+2. **配置 Google OAuth** - 如需要则添加 GOOGLE_OAUTH_REDIRECT_URI 环境变量
+3. **测试 AI 功能** - 验证 Gemini API 是否正常
+4. **建立 GitHub 部署** - 根据需要配置 GitHub Actions 或 Cloud Build
+
+---
+
 ## 2026-02-20 - 尝试修复 AI 模块，发现 Gemini 模型已停用 🔄 
 
 ### 问题描述

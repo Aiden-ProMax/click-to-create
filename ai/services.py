@@ -83,10 +83,10 @@ def parse_with_openai(text: str) -> dict:
         )
 
         # 创建模型实例
-        # 使用来自环境变量的模型名（默认 gemini-1.0-pro）
-        # 支持 generateContent 方法，适合自然语言解析
-        model_name = settings.GOOGLE_GENERATIVE_AI_MODEL or 'gemini-1.0-pro'
-        logger.info(f'Using AI model: {model_name}')
+        # 使用最新的实验模型 gemini-2.0-flash-exp
+        # 如果不可用，将回退到环境变量中的模型名或 gemini-pro
+        model_name = settings.GOOGLE_GENERATIVE_AI_MODEL or 'gemini-2.0-flash-exp'
+        logger.info(f'Initializing AI model: {model_name}')
         
         model = genai.GenerativeModel(
             model_name=model_name,

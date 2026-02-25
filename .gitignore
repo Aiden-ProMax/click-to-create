@@ -1,12 +1,16 @@
-# Environment variables
+# Environment variables (NEVER commit these)
 .env
 .env.local
 .env.production
 .env.*.local
+.env.*.local.py
 deploy_vars.env
+env-vars.yaml
+env-vars.*.yaml
 
-# Credentials and secrets
+# Credentials and secrets (NEVER commit these)
 webclient.json
+*.p12
 *.json
 secrets/
 

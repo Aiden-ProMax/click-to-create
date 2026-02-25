@@ -1,0 +1,34 @@
+# Production environment configuration template for Cloud Run deployment
+# 
+# DO NOT commit actual values to Git
+# Copy this file and fill in with real values from Google Cloud Console
+#
+# Usage: cp env-vars.yaml.example env-vars.yaml
+#        Edit env-vars.yaml with real values
+#        Use with: gcloud run deploy ... --env-vars-file env-vars.yaml
+
+ENVIRONMENT: production
+
+# === Required for production deployment ===
+
+# Django security
+DJANGO_SECRET_KEY: <your-secure-random-key-from-python-django.core.management.utils>
+DJANGO_ALLOWED_HOSTS: <your-cloud-run-service-url>  # e.g., clickcreate-xxxx.us-west2.run.app
+
+# Google APIs
+GOOGLE_GENERATIVE_AI_KEY: <your-gemini-api-key-from-ai.google.dev>
+
+# OAuth2 Configuration  
+GOOGLE_OAUTH_REDIRECT_URI: <your-production-oauth-callback-url>  # e.g., https://your-app.run.app/oauth/google/callback
+GOOGLE_OAUTH_CLIENT_JSON: '<your-oauth-credentials-json-escaped>'
+
+# Database (Cloud SQL)
+DB_NAME: autoplanner
+DB_USER: <your-cloud-sql-user>
+DB_PASSWORD: <your-cloud-sql-password>
+CLOUD_SQL_CONNECTION_NAME: <your-project>:<region>:<instance-name>  # e.g., my-project:us-west1:my-db
+
+# === Optional settings ===
+
+OAUTHLIB_INSECURE_TRANSPORT: "false"  # Always false in production
+DJANGO_DEBUG: "false"  # NEVER true in production

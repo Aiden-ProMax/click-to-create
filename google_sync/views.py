@@ -46,6 +46,8 @@ class GoogleOAuthStartView(APIView):
             state=signed_state,
         )
         request.session['google_oauth_state'] = state
+        # Preserve PKCE verifier for callback token exchange.
+        request.session['google_oauth_code_verifier'] = flow.code_verifier
         return redirect(authorization_url)
 
 
@@ -77,6 +79,11 @@ class GoogleOAuthCallbackView(APIView):
                 state=state_from_query if state_from_query else state,
                 disable_state_check=disable_state_check,
             )
+            code_verifier = request.session.get('google_oauth_code_verifier')
+            if code_verifier:
+                flow.code_verifier = code_verifier
+            else:
+                logger.warning('OAuth callback missing PKCE code_verifier in session')
 
             user_for_token = request.user if request.user.is_authenticated else None
             if not user_for_token:
@@ -110,6 +117,10 @@ class GoogleOAuthCallbackView(APIView):
             # Store credentials
             store_credentials(user_for_token, creds)
             logger.info(f"OAuth token stored for user {user_for_token.username}")
+
+            # One-time OAuth artifacts can be cleared after successful exchange.
+            request.session.pop('google_oauth_state', None)
+            request.session.pop('google_oauth_code_verifier', None)
 
             # Redirect to dashboard
             return redirect('/dashboard.html')

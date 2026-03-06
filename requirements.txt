@@ -1,6 +1,7 @@
 Django>=6.0
 Djangorestframework>=3.16
 python-dotenv>=1.2
+python-dateutil>=2.8
 requests>=2.31
 google-api-python-client>=2.126
 google-auth>=2.29

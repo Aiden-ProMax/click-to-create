@@ -16,14 +16,16 @@ A Django-based web application that intelligently parses natural language input 
 
 ## 📋 Quick Links
 
-- **[部署指南](docs/DEPLOYMENT_GUIDE.md)** - Cloud Run 部署步骤
-- **[项目结构](docs/PROJECT_STRUCTURE.md)** - 详细的代码结构说明
-- **[项目摘要](docs/PROJECT_SUMMARY.md)** - 项目架构和功能总结
-- **[完整文档](docs/)** - 所有详细文档
+- **[文档入口](docs/README.md)** - 当前状态与文档导航
+- **[手动部署](docs/DEPLOYMENT_SIMPLE.md)** - 唯一有效部署路径
+- **[部署策略](DEPLOYMENT_POLICY.md)** - 手动部署与清理规范
+- **[系统状态](docs/SYSTEM_STATUS.md)** - 线上版本与运维命令
 
 ## 🌐 Live Application
 
-**URL**: https://autoplanner-aw36pbwf6a-uc.a.run.app
+**URL**: https://clickcreate-110580126301.us-west2.run.app
+**版本**: V22 (2026-03-03)
+**状态**: ✅ 所有功能完全工作（OAuth + AI）
 
 ## 🔧 Local Development
 
@@ -38,7 +40,7 @@ python manage.py migrate
 python manage.py runserver 8000
 
 # Run automated tests
-./test_complete.sh
+python manage.py test
 ```
 
 ## 📦 Technology Stack
@@ -57,7 +59,7 @@ Required environment variables:
 - `DJANGO_SECRET_KEY` - Django secret key
 - `ENVIRONMENT` - 'development' or 'production'
 
-For OAuth setup, see [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
+For OAuth setup, see [DEPLOYMENT_SIMPLE.md](docs/DEPLOYMENT_SIMPLE.md)
 
 ## 📝 License
 

@@ -75,7 +75,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'users',
     'events',
-    'caldav_sync',
     'google_sync',
     'ai',
 ]

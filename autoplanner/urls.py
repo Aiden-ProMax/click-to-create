@@ -30,7 +30,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
     path('api/events/', include('events.urls')),
-    path('api/caldav/', include('caldav_sync.urls')),
     path('', include('google_sync.urls')),
     path('api/ai/', include('ai.urls')),
 ]

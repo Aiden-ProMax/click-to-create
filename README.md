@@ -12,7 +12,6 @@ A Django-based web application that intelligently parses natural language input 
 - **AI-Powered Normalization**: Use Google Gemini API to intelligently understand event details
 - **Google Calendar Integration**: Seamlessly sync events with Google Calendar via OAuth 2.0
 - **Cloud Deployment**: Running on Google Cloud Run for scalability
-- **Multi-calendar Support**: Support for CalDAV and Google Calendar
 
 ## 📋 Quick Links
 

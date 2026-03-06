@@ -4,6 +4,7 @@
 .env.production
 .env.*.local
 deploy_vars.env
+env-vars.yaml
 
 # Credentials and secrets
 webclient.json

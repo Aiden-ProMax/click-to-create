@@ -17,6 +17,9 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Version identifier
+APP_VERSION = 'v23-caldav-removed-2026-03-06'
+
 
 
 # Quick-start development settings - unsuitable for production
